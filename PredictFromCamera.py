@@ -8,8 +8,8 @@ import numpy as np
 import argparse
 
 from ImageDataset import ImageDataset
-from modelA import modelA
-from modelB import modelB
+from model_SeResNeXt50 import model_SeResNeXt50
+from model_SqueezeNet import model_SqueezeNet
 
 
 def get_tensor_batch(images: list):
@@ -95,7 +95,7 @@ def video_capture(args):
 
     # loading model
     print("loading model...")
-    model = modelB(num_classes, True).to(device)
+    model = model_SqueezeNet(num_classes, True).to(device)
     model_name = type(model).__name__
     target_size = (224, 224)
 

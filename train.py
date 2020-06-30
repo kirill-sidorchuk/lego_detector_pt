@@ -10,7 +10,7 @@ from DebugDumper import DebugDumper
 from ImageDataset import ImageDataset
 from PlotUtils import plot_histograms, plot_train_curves
 from RenderingDataset import RenderingDataset
-from modelA import modelA
+from model_SeResNeXt50 import model_SeResNeXt50
 
 
 def train(data_loader: DataLoader, model: nn.Module, num_iterations: int, start_iteration: int, device: torch.device,
@@ -134,8 +134,11 @@ def main(args):
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True, **kwargs)
 
     # creating model
-    model = modelA(num_classes, False).to(device)
-    model_name = type(model).__name__
+    model_name = 'model_' + args.model
+    module = __import__(model_name)
+    _class = getattr(module, model_name)
+    model = _class(num_classes, False).to(device)
+    # model_name = type(model).__name__
 
     # preparing snapshot dir
     if not os.path.exists(snapshot_dir):

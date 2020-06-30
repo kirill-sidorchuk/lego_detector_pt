@@ -2,15 +2,15 @@ import pretrainedmodels
 import torch.nn as nn
 
 
-class modelB(nn.Module):
+class model_SeResNeXt50(nn.Module):
 
     def __init__(self, num_classes, inference):
-        super(modelB, self).__init__()
+        super(model_SeResNeXt50, self).__init__()
 
-        self.encoder = pretrainedmodels.__dict__["squeezenet1_1"](num_classes=1000, pretrained='imagenet')
-        self.global_pool = nn.AvgPool2d(13, stride=1)
+        self.encoder = pretrainedmodels.__dict__["se_resnext50_32x4d"](num_classes=1000, pretrained='imagenet')
+        self.global_pool = nn.AvgPool2d(7, stride=1)
         self.classifier = nn.Sequential()
-        self.classifier.add_module('proj', nn.Linear(512, num_classes))
+        self.classifier.add_module('proj', nn.Linear(2048, num_classes))
         if inference:
             self.classifier.add_module('softmax', nn.Softmax())
 
