@@ -292,7 +292,7 @@ url_map = {
     'efficientnet-b1': 'https://publicmodels.blob.core.windows.net/container/aa/efficientnet-b1-f1951068.pth',
     'efficientnet-b2': 'https://publicmodels.blob.core.windows.net/container/aa/efficientnet-b2-8bb594d6.pth',
     'efficientnet-b3': 'https://publicmodels.blob.core.windows.net/container/aa/efficientnet-b3-5fb5a3c3.pth',
-    'efficientnet-b4': 'https://publicmodels.blob.core.windows.net/container/aa/efficientnet-b4-6ed6700e.pth',
+    'efficientnet-b4': 'https://github.com/lukemelas/EfficientNet-PyTorch/releases/download/1.0/efficientnet-b4-6ed6700e.pth',
     'efficientnet-b5': 'https://publicmodels.blob.core.windows.net/container/aa/efficientnet-b5-b6417697.pth',
     'efficientnet-b6': 'https://publicmodels.blob.core.windows.net/container/aa/efficientnet-b6-c76e70fd.pth',
     'efficientnet-b7': 'https://publicmodels.blob.core.windows.net/container/aa/efficientnet-b7-dcc49843.pth',
@@ -562,7 +562,7 @@ class EfficientNet(nn.Module):
             raise ValueError('model_name should be one of: ' + ', '.join(valid_models))
 
 
-class model_EffNet7(nn.Module):
+class model_EffNet4(nn.Module):
 
     def __init__(self, num_classes, inference):
         super().__init__()
@@ -570,10 +570,10 @@ class model_EffNet7(nn.Module):
         self.img_mean = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32, requires_grad=False).view(1, -1, 1, 1)
         self.img_std = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32, requires_grad=False).view(1, -1, 1, 1)
 
-        self.eff_net = EfficientNet.from_pretrained('efficientnet-b5', head=False)
+        self.eff_net = EfficientNet.from_pretrained('efficientnet-b4', head=False)
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.classifier = nn.Sequential()
-        self.classifier.add_module('proj', nn.Linear(512, num_classes))
+        self.classifier.add_module('proj', nn.Linear(448, num_classes))
         if inference:
             self.classifier.add_module('softmax', nn.Softmax())
 
