@@ -1,5 +1,6 @@
 import os
 
+import cv2
 import torch
 import torch.nn as nn
 import argparse
@@ -96,9 +97,25 @@ def train(data_loader: DataLoader, model: nn.Module, num_iterations: int, start_
     return num_iterations + start_iteration
 
 
+def set_num_threads(nt):
+    try:
+        import mkl
+        mkl.set_num_threads(nt)
+    except Exception as e:
+        print('Unable to set numthreads in mkl: ' + str(e))
+
+    cv2.setNumThreads(nt)
+
+    nt = str(nt)
+    os.environ['OPENBLAS_NUM_THREADS'] = nt
+    os.environ['NUMEXPR_NUM_THREADS'] = nt
+    os.environ['OMP_NUM_THREADS'] = nt
+    os.environ['MKL_NUM_THREADS'] = nt
+
+
 def main(args):
 
-    batch_size = 32
+    batch_size = 24
     snapshot_iters = 500
     test_iters = 100
     snapshot_dir = "snapshots"
@@ -106,6 +123,8 @@ def main(args):
     learning_rate = 0.01
     debug_dir = "debug"
     debug_number = 0
+
+    set_num_threads(1)
 
     use_cuda = torch.cuda.is_available() and args.gpu.lower() == 'true'
     device = torch.device("cuda" if use_cuda else "cpu")
@@ -129,7 +148,7 @@ def main(args):
     test_dataset = RenderingDataset(backgrounds, test_foregrounds, image_size)
 
     # create data loaders
-    kwargs = {'num_workers': 6, 'pin_memory': False} if use_cuda else {}
+    kwargs = {'num_workers': 6, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True, **kwargs)
 
