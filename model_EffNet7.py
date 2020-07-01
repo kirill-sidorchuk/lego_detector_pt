@@ -562,10 +562,13 @@ class EfficientNet(nn.Module):
             raise ValueError('model_name should be one of: ' + ', '.join(valid_models))
 
 
-class model_EffNet(nn.Module):
+class model_EffNet7(nn.Module):
 
     def __init__(self, num_classes, inference):
         super().__init__()
+
+        self.img_mean = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32, requires_grad=False).view(1, -1, 1, 1)
+        self.img_std = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32, requires_grad=False).view(1, -1, 1, 1)
 
         self.eff_net = EfficientNet.from_pretrained('efficientnet-b5', head=False)
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
