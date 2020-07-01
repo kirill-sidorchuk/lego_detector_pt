@@ -110,14 +110,16 @@ def plot_gradients(grads: dict, title: str, dir: str) -> None:
         plt.close()
 
 
-def plot_train_curves(_train_losses: dict, _test_losses: dict, title: str, dir: str, only_test: bool = False):
+def plot_train_curves(_train_losses: dict, _test_losses: dict, title: str, dir: str, only_test: bool = False,
+                      logy: bool = True):
 
     # extracting two sorted arrays out of losses dictionaries
     train_iters, train_losses = split_dict(_train_losses)
     test_iters, test_losses = split_dict(_test_losses)
 
     axes = plt.gca()
-    axes.set_yscale("log")
+    if logy:
+        axes.set_yscale("log")
 
     if not only_test:
         plt.scatter(train_iters, train_losses, c='r', alpha=0.25)

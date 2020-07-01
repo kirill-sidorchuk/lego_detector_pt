@@ -207,7 +207,7 @@ def main(args):
         # visualizing training progress
         plot_histograms(model, model_dir)
         plot_train_curves(train_losses, test_losses, "TrainCurves", model_dir)
-        plot_train_curves(train_accuracies, test_accuracies, "Accuracy", model_dir)
+        plot_train_curves(train_accuracies, test_accuracies, "Accuracy", model_dir, logy=False)
 
 
 def get_snapshot_file_name(iteration, model_dir):
