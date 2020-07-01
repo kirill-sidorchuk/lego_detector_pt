@@ -1,3 +1,4 @@
+import torch
 import torchvision.models as models
 import torch.nn as nn
 
@@ -9,7 +10,7 @@ class model_ResNet50(nn.Module):
 
         self.encoder = models.resnet50(pretrained=True)
         self.classifier = nn.Sequential()
-        self.classifier.add_module('proj', nn.Linear(512, num_classes))
+        self.classifier.add_module('proj', nn.Linear(2048, num_classes))
         if inference:
             self.classifier.add_module('softmax', nn.Softmax())
 
@@ -29,6 +30,7 @@ class model_ResNet50(nn.Module):
         x = self.encoder.layer4(x)
 
         x = self.encoder.avgpool(x)
+        x = torch.flatten(x, 1)
 
         probs = self.classifier(x)
         return probs
