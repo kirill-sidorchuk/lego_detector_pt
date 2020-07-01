@@ -50,7 +50,7 @@ def split_dict(vals_dict: dict) -> tuple:
     """
     Split and sort keys and values
     :param vals_dict:
-    :return:
+    :return: tuple [key, value]
     """
 
     keys = [key for key in vals_dict]

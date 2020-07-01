@@ -11,12 +11,11 @@ from DebugDumper import DebugDumper
 from ImageDataset import ImageDataset
 from PlotUtils import plot_histograms, plot_train_curves
 from RenderingDataset import RenderingDataset
-from model_SeResNeXt50 import model_SeResNeXt50
 
 
 def train(data_loader: DataLoader, model: nn.Module, num_iterations: int, start_iteration: int, device: torch.device,
           losses_dict: dict, accuracies_dict: dict, optimizer: torch.optim.Optimizer = None,
-          debug_dumper: DebugDumper = None):
+          debug_dumper: DebugDumper = None, log_file_name: str = None):
 
     loss_func = nn.CrossEntropyLoss()
 
@@ -78,9 +77,13 @@ def train(data_loader: DataLoader, model: nn.Module, num_iterations: int, start_
             av_loss /= av_n
             av_accuracy /= av_n
             if is_train:
-                print("%d: epoch=%1.2f, loss=%f, accuracy=%1.2f%%" % (iteration, e, av_loss, av_accuracy*100))
+                log_string = "%d: epoch=%1.2f, loss=%f, accuracy=%1.2f%%" % (iteration, e, av_loss, av_accuracy * 100)
             else:
-                print("%d: loss=%f, accuracy=%1.2f%%" % (i, av_loss, av_accuracy*100))
+                log_string = "%d: loss=%f, accuracy=%1.2f%%" % (i, av_loss, av_accuracy * 100)
+            print(log_string)
+            if log_file_name is not None:
+                with open(log_file_name, 'a+') as lf:
+                    lf.write(log_string + '\n')
 
         # adding loss to log
         if is_train:
@@ -115,7 +118,7 @@ def set_num_threads(nt):
 
 def main(args):
 
-    batch_size = 24
+    batch_size = 32
     snapshot_iters = 500
     test_iters = 100
     snapshot_dir = "snapshots"
@@ -157,7 +160,6 @@ def main(args):
     module = __import__(model_name)
     _class = getattr(module, model_name)
     model = _class(num_classes, False).to(device)
-    # model_name = type(model).__name__
 
     # preparing snapshot dir
     if not os.path.exists(snapshot_dir):
@@ -189,11 +191,16 @@ def main(args):
     # creating debug dumper
     debug_dumper = DebugDumper(debug_dir, debug_number)
 
+    # creating log files
+    train_log_file = os.path.join(model_dir, 'train.log')
+    test_log_file = os.path.join(model_dir, 'test.log')
+
     while iteration < args.num_iterations:
 
         # train
         print("training...")
-        iteration = train(train_loader, model, snapshot_iters, iteration, device, train_losses, train_accuracies, optimizer, debug_dumper)
+        iteration = train(train_loader, model, snapshot_iters, iteration, device, train_losses, train_accuracies,
+                          optimizer, debug_dumper, train_log_file)
 
         # dumping snapshot
         snapshot_file = get_snapshot_file_name(iteration, model_dir)
@@ -202,7 +209,8 @@ def main(args):
 
         # test
         print("testing...")
-        train(test_loader, model, test_iters, iteration, device, test_losses, test_accuracies)
+        train(test_loader, model, test_iters, iteration, device, test_losses, test_accuracies,
+              log_file_name=test_log_file)
 
         # visualizing training progress
         plot_histograms(model, model_dir)
