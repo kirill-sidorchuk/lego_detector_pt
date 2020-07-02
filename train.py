@@ -156,7 +156,7 @@ def main(args):
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True, **kwargs)
 
     # creating model
-    model, model_name = load_model(args.model, device, num_classes)
+    model, model_name = load_model(args.model, device, num_classes, inference=False)
 
     # preparing snapshot dir
     if not os.path.exists(snapshot_dir):
@@ -215,11 +215,11 @@ def main(args):
         plot_train_curves(train_accuracies, test_accuracies, "Accuracy", model_dir, logy=False)
 
 
-def load_model(name, device, num_classes):
+def load_model(name, device, num_classes, inference):
     model_name = 'model_' + name
     module = __import__(model_name)
     _class = getattr(module, model_name)
-    model = _class(num_classes, False).to(device)
+    model = _class(num_classes, inference=inference).to(device)
     return model, model_name
 
 

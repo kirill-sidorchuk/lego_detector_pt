@@ -570,7 +570,10 @@ class model_EffNet4(nn.Module):
         self.img_mean = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32, requires_grad=False).view(1, -1, 1, 1)
         self.img_std = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32, requires_grad=False).view(1, -1, 1, 1)
 
-        self.eff_net = EfficientNet.from_pretrained('efficientnet-b4', head=False)
+        if inference:
+            self.eff_net = EfficientNet.from_name('efficientnet-b4', head=False)
+        else:
+            self.eff_net = EfficientNet.from_pretrained('efficientnet-b4', head=False)
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.classifier = nn.Sequential()
         self.classifier.add_module('proj', nn.Linear(448, num_classes))

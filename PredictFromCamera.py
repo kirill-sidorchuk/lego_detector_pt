@@ -94,7 +94,7 @@ def video_capture(args):
 
     # loading model
     print("loading model...")
-    model, model_name = load_model(args.model, device, num_classes)
+    model, model_name = load_model(args.model, device, num_classes, inference=True)
     target_size = (224, 224)
 
     # loading snapshot

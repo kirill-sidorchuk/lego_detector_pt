@@ -7,7 +7,7 @@ class model_SeResNeXt50(nn.Module):
     def __init__(self, num_classes, inference):
         super(model_SeResNeXt50, self).__init__()
 
-        self.encoder = pretrainedmodels.__dict__["se_resnext50_32x4d"](num_classes=1000, pretrained='imagenet')
+        self.encoder = pretrainedmodels.__dict__["se_resnext50_32x4d"](num_classes=1000, pretrained='imagenet' if not inference else None)
         self.global_pool = nn.AvgPool2d(7, stride=1)
         self.classifier = nn.Sequential()
         self.classifier.add_module('proj', nn.Linear(2048, num_classes))

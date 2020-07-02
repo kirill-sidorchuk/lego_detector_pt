@@ -8,7 +8,7 @@ class model_ResNet50(nn.Module):
     def __init__(self, num_classes, inference):
         super().__init__()
 
-        self.encoder = models.resnet50(pretrained=True)
+        self.encoder = models.resnet50(pretrained=not inference)
         self.classifier = nn.Sequential()
         self.classifier.add_module('proj', nn.Linear(2048, num_classes))
         if inference:
