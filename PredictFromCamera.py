@@ -8,8 +8,7 @@ import numpy as np
 import argparse
 
 from ImageDataset import ImageDataset
-from model_SeResNeXt50 import model_SeResNeXt50
-from model_SqueezeNet import model_SqueezeNet
+from train import load_model
 
 
 def get_tensor_batch(images: list):
@@ -95,8 +94,7 @@ def video_capture(args):
 
     # loading model
     print("loading model...")
-    model = model_SqueezeNet(num_classes, True).to(device)
-    model_name = type(model).__name__
+    model, model_name = load_model(args.model, device, num_classes)
     target_size = (224, 224)
 
     # loading snapshot

@@ -156,10 +156,7 @@ def main(args):
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True, **kwargs)
 
     # creating model
-    model_name = 'model_' + args.model
-    module = __import__(model_name)
-    _class = getattr(module, model_name)
-    model = _class(num_classes, False).to(device)
+    model, model_name = load_model(args.model, device, num_classes)
 
     # preparing snapshot dir
     if not os.path.exists(snapshot_dir):
@@ -216,6 +213,14 @@ def main(args):
         plot_histograms(model, model_dir)
         plot_train_curves(train_losses, test_losses, "TrainCurves", model_dir)
         plot_train_curves(train_accuracies, test_accuracies, "Accuracy", model_dir, logy=False)
+
+
+def load_model(name, device, num_classes):
+    model_name = 'model_' + name
+    module = __import__(model_name)
+    _class = getattr(module, model_name)
+    model = _class(num_classes, False).to(device)
+    return model, model_name
 
 
 def get_snapshot_file_name(iteration, model_dir):
