@@ -11,6 +11,7 @@ from DebugDumper import DebugDumper
 from ImageDataset import ImageDataset
 from PlotUtils import plot_histograms, plot_train_curves
 from RenderingDataset import RenderingDataset
+from TestDataset import TestDataset
 
 
 def train(data_loader: DataLoader, model: nn.Module, num_iterations: int, start_iteration: int, device: torch.device,
@@ -100,6 +101,14 @@ def train(data_loader: DataLoader, model: nn.Module, num_iterations: int, start_
     return num_iterations + start_iteration
 
 
+def test(test_set: ImageDataset, model: nn.Module, iteration: int, device: torch.device):
+    """
+    Runs prediction on test set and calculates test accuracy.
+    :return:
+    """
+    pass
+
+
 def set_num_threads(nt):
     try:
         import mkl
@@ -135,25 +144,29 @@ def main(args):
 
     # create data sets
     train_foregrounds = ImageDataset(os.path.join(args.data_root, "train.txt"), "sorted")
-    test_foregrounds = ImageDataset(os.path.join(args.data_root, "val.txt"), "sorted")
+    val_foregrounds = ImageDataset(os.path.join(args.data_root, "val.txt"), "sorted")
     num_classes = len(train_foregrounds.labels)
     backgrounds = ImageDataset(os.path.join(args.data_root, "backgrounds"), force_rgb=True)
 
+    # initialize test set
+    test_set = TestDataset(os.path.join(args.data_root, "test"))
+
     print("Number of classes = %d" % num_classes)
     print("Number of train foregrounds = %d" % len(train_foregrounds))
-    print("Number of test foregrounds = %d" % len(test_foregrounds))
+    print("Number of validation foregrounds = %d" % len(val_foregrounds))
+    print("Number of test images = %d" % len(test_set))
     print("Number of backgrounds = %d" % len(backgrounds))
 
-    if len(train_foregrounds) == 0 or len(test_foregrounds) == 0 or len(backgrounds) == 0:
+    if len(train_foregrounds) == 0 or len(val_foregrounds) == 0 or len(backgrounds) == 0:
         raise Exception("One of datasets is empty")
 
     train_dataset = RenderingDataset(backgrounds, train_foregrounds, image_size)
-    test_dataset = RenderingDataset(backgrounds, test_foregrounds, image_size)
+    test_dataset = RenderingDataset(backgrounds, val_foregrounds, image_size)
 
     # create data loaders
     kwargs = {'num_workers': 6, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, **kwargs)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True, **kwargs)
+    val_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True, **kwargs)
 
     # creating model
     model, model_name = load_model(args.model, device, num_classes, inference=False)
@@ -204,10 +217,14 @@ def main(args):
         print("dumping snapshot: " + snapshot_file)
         torch.save(model.state_dict(), snapshot_file)
 
-        # test
-        print("testing...")
-        train(test_loader, model, test_iters, iteration, device, test_losses, test_accuracies,
+        # validation
+        print("validation...")
+        train(val_loader, model, test_iters, iteration, device, test_losses, test_accuracies,
               log_file_name=test_log_file)
+
+        # test
+        print("test...")
+        test(test_set, model, iteration, device)
 
         # visualizing training progress
         plot_histograms(model, model_dir)
