@@ -137,7 +137,7 @@ def main(args):
     train_foregrounds = ImageDataset(os.path.join(args.data_root, "train.txt"), "sorted")
     test_foregrounds = ImageDataset(os.path.join(args.data_root, "val.txt"), "sorted")
     num_classes = len(train_foregrounds.labels)
-    backgrounds = ImageDataset(os.path.join(args.data_root, "backgrounds"), forceRgb=True)
+    backgrounds = ImageDataset(os.path.join(args.data_root, "backgrounds"), force_rgb=True)
 
     print("Number of classes = %d" % num_classes)
     print("Number of train foregrounds = %d" % len(train_foregrounds))

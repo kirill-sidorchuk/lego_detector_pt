@@ -1,7 +1,8 @@
 import os
 
-import cv2
 from torch.utils.data import Dataset
+
+from ImageCache import ImageCache
 
 
 class ImageDataset(Dataset):
@@ -10,20 +11,20 @@ class ImageDataset(Dataset):
     """
     img_exts = {'.png', '.jpg'}
 
-    def __init__(self, root: str, subdir: str = None, forceRgb = False):
+    def __init__(self, root: str, subdir: str = None, force_rgb: bool = False):
         super(ImageDataset, self).__init__()
         if os.path.isfile(root):
             self.images = self._load_list(root, subdir)
             self.labels = self._get_labels(self.images, os.path.dirname(root))
         else:
             self.images = self._search_for_files(root)
-        self.forceRgb = forceRgb
+        self.cache = ImageCache(force_rgb)
 
     def __getitem__(self, index):
         filename = self.images[index]
         label = self._get_label(filename)
 
-        img = cv2.imread(filename, cv2.IMREAD_COLOR if self.forceRgb else cv2.IMREAD_UNCHANGED)
+        img = self.cache.load(filename)
 
         return img, label
 
