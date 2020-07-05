@@ -92,6 +92,10 @@ def video_capture(args):
     num_classes = len(labels)
     print("Number of recognized classes = %d" % num_classes)
 
+    if not os.path.exists(args.dump_dir):
+        print('Creating dump directory: ' + args.dump_dir)
+        os.mkdir(args.dump_dir)
+
     # loading model
     print("loading model...")
     model, model_name = load_model(args.model, device, num_classes, inference=True)
@@ -116,6 +120,8 @@ def video_capture(args):
 
     past_frames = []
 
+    dump_image_counter = 1
+
     while cap.isOpened():
         # Capture frame-by-frame
         ret, frame = cap.read()
@@ -135,6 +141,7 @@ def video_capture(args):
 
             probs = predict_with_tta(args.tta, images_to_predict, model, target_size)
             sorted_indexes = np.argsort(probs)
+            frame_to_show_saved = frame_to_show.copy()
             for t in range(5):
                 label_index = sorted_indexes[-t - 1]
                 label_prob = probs[label_index]
@@ -146,8 +153,18 @@ def video_capture(args):
             cv2.imshow('Frame', frame_to_show)
 
             # Press Q on keyboard to  exit
-            if cv2.waitKey(25) & 0xFF == ord('q'):
+            key = cv2.waitKey(25) & 0xFF
+            if key == ord('q'):
                 break
+
+            if key == ord('p'):
+                top_label = labels[sorted_indexes[-1]]
+                label_dir = os.path.join(args.dump_dir, top_label)
+                if not os.path.exists(label_dir):
+                    os.mkdir(label_dir)
+                image_file_name = os.path.join(label_dir, 'img_%d.jpg' % dump_image_counter)
+                cv2.imwrite(image_file_name, frame_to_show_saved)
+                dump_image_counter += 1
 
         # Break the loop
         else:
@@ -171,6 +188,7 @@ if __name__ == "__main__":
     parser.add_argument("--rtta", type=int, default=0,
                         help="Robot TTA. <1 - no TTA, >1 - number of images to take for TTA")
     parser.add_argument("--tta_mode", type=str, default="mean", help="'mean' or 'majority' voting TTA")
+    parser.add_argument("--dump_dir", type=str, default="dump", help="destination dir for dumps")
 
     _args = parser.parse_args()
     video_capture(_args)
