@@ -1,5 +1,7 @@
+import math
 import os
 
+import numpy as np
 import cv2
 import torch
 import torch.nn as nn
@@ -24,8 +26,11 @@ def train(data_loader: DataLoader, model: nn.Module, num_iterations: int, start_
     epoch_size = len(data_loader.dataset)
 
     is_train = optimizer is not None
+    if is_train:
+        model.train()
+    else:
+        model.eval()
 
-    i = 0
     global_av_loss = 0
     global_av_accuracy = 0
     for i in range(num_iterations):
@@ -101,12 +106,68 @@ def train(data_loader: DataLoader, model: nn.Module, num_iterations: int, start_
     return num_iterations + start_iteration
 
 
-def test(test_set: ImageDataset, model: nn.Module, iteration: int, device: torch.device):
+def image_to_tensor(img: np.ndarray) -> torch.Tensor:
+    """
+    Converts 8 bit BGR image [H, W, C] to 32-bit float tensor [1, C, H, W]
+    :param img: 8 bit BGR image to convert.
+    :return: torch tensor [1, C, H, W] float 32 [0..1]
+    """
+    img = torch.from_numpy(img)
+    img = img.permute(2, 0, 1)
+    img = img.unsqueeze(0)
+    img = img.to(torch.float32) / 255.
+    return img
+
+
+def test(test_set: TestDataset, model: nn.Module, iteration: int, device: torch.device, log_file_name: str):
     """
     Runs prediction on test set and calculates test accuracy.
     :return:
     """
-    pass
+
+    count = 0
+    number = 0
+
+    with torch.no_grad():
+        model.eval()
+
+        # iterating over all test set
+        batch_size = 32
+        num_batches = math.ceil(len(test_set) / float(batch_size))
+        for b in range(num_batches):
+
+            # assembling batch
+            img_batch = []
+            label_batch = []
+            for i in range(batch_size):
+                index = i + b * batch_size
+                if index >= len(test_set):
+                    break
+                img, label = test_set[index]
+                img_data = image_to_tensor(img)
+                img_batch.append(img_data)
+                label_batch.append(label)
+
+            img_batch = torch.cat(img_batch, dim=0).to(device)
+            label_batch = torch.tensor(label_batch, dtype=torch.long).to(device)
+
+            probs = model.forward({'rgb': img_batch})
+            # [B, num_classes]
+
+            top_1 = torch.argmax(probs, dim=1)
+            # [B]
+            acc = torch.nonzero(top_1 == label_batch)
+            count += acc.item()
+            number += label_batch.shape[0]
+
+    accuracy = 100.0 * count / number if number != 0 else 0.0
+
+    with open(log_file_name, 'a+') as f:
+        f.write('%d, accuracy=%1.2f\n' % (iteration, accuracy))
+
+    print('test accuracy = %1.2f%%' % accuracy)
+
+    return accuracy
 
 
 def set_num_threads(nt):
@@ -149,7 +210,7 @@ def main(args):
     backgrounds = ImageDataset(os.path.join(args.data_root, "backgrounds"), force_rgb=True)
 
     # initialize test set
-    test_set = TestDataset(os.path.join(args.data_root, "test"))
+    test_set = TestDataset(args.data_root, "test")
 
     print("Number of classes = %d" % num_classes)
     print("Number of train foregrounds = %d" % len(train_foregrounds))
@@ -203,6 +264,7 @@ def main(args):
 
     # creating log files
     train_log_file = os.path.join(model_dir, 'train.log')
+    val_log_file = os.path.join(model_dir, 'val.log')
     test_log_file = os.path.join(model_dir, 'test.log')
 
     while iteration < args.num_iterations:
@@ -220,11 +282,11 @@ def main(args):
         # validation
         print("validation...")
         train(val_loader, model, test_iters, iteration, device, test_losses, test_accuracies,
-              log_file_name=test_log_file)
+              log_file_name=val_log_file)
 
         # test
         print("test...")
-        test(test_set, model, iteration, device)
+        test(test_set, model, iteration, device, test_log_file)
 
         # visualizing training progress
         plot_histograms(model, model_dir)
