@@ -81,11 +81,11 @@ def train(data_loader: DataLoader, model: nn.Module, num_iterations: int, start_
         if i % 10 == 0:
             e = iteration / epoch_size
             av_loss /= av_n
-            av_accuracy /= av_n
+            av_accuracy = 100 * av_accuracy / av_n
             if is_train:
-                log_string = "%d: epoch=%1.2f, loss=%f, accuracy=%1.2f%%" % (iteration, e, av_loss, av_accuracy * 100)
+                log_string = "%d: epoch=%1.2f, loss=%f, accuracy=%1.2f%%" % (iteration, e, av_loss, av_accuracy)
             else:
-                log_string = "%d: loss=%f, accuracy=%1.2f%%" % (i, av_loss, av_accuracy * 100)
+                log_string = "%d: loss=%f, accuracy=%1.2f%%" % (i, av_loss, av_accuracy)
             print(log_string)
             if log_file_name is not None:
                 with open(log_file_name, 'a+') as lf:
@@ -94,7 +94,7 @@ def train(data_loader: DataLoader, model: nn.Module, num_iterations: int, start_
         # adding loss to log
         if is_train:
             losses_dict[iteration] = loss.item()
-            accuracies_dict[iteration] = accuracy
+            accuracies_dict[iteration] = accuracy * 100.0
 
     if not is_train:
         global_av_loss /= num_iterations
@@ -119,7 +119,7 @@ def image_to_tensor(img: np.ndarray) -> torch.Tensor:
     return img
 
 
-def test(test_set: TestDataset, model: nn.Module, iteration: int, device: torch.device, log_file_name: str):
+def test(test_set: TestDataset, model: nn.Module, iteration: int, device: torch.device, accuracies_dict: dict, log_file_name: str):
     """
     Runs prediction on test set and calculates test accuracy.
     :return:
@@ -156,11 +156,12 @@ def test(test_set: TestDataset, model: nn.Module, iteration: int, device: torch.
 
             top_1 = torch.argmax(probs, dim=1)
             # [B]
-            acc = torch.nonzero(top_1 == label_batch)
-            count += acc.item()
+            acc = torch.nonzero(top_1 == label_batch, as_tuple=False).shape[0]
+            count += acc
             number += label_batch.shape[0]
 
     accuracy = 100.0 * count / number if number != 0 else 0.0
+    accuracies_dict[iteration] = accuracy
 
     with open(log_file_name, 'a+') as f:
         f.write('%d, accuracy=%1.2f\n' % (iteration, accuracy))
@@ -210,7 +211,7 @@ def main(args):
     backgrounds = ImageDataset(os.path.join(args.data_root, "backgrounds"), force_rgb=True)
 
     # initialize test set
-    test_set = TestDataset(args.data_root, "test")
+    test_set = TestDataset(args.data_root, "test", dst_img_size=image_size)
 
     print("Number of classes = %d" % num_classes)
     print("Number of train foregrounds = %d" % len(train_foregrounds))
@@ -256,7 +257,8 @@ def main(args):
     # creating logs
     train_losses = {}
     train_accuracies = {}
-    test_losses = {}
+    val_losses = {}
+    val_accuracies = {}
     test_accuracies = {}
 
     # creating debug dumper
@@ -281,17 +283,18 @@ def main(args):
 
         # validation
         print("validation...")
-        train(val_loader, model, test_iters, iteration, device, test_losses, test_accuracies,
+        train(val_loader, model, test_iters, iteration, device, val_losses, val_accuracies,
               log_file_name=val_log_file)
 
         # test
         print("test...")
-        test(test_set, model, iteration, device, test_log_file)
+        test(test_set, model, iteration, device, test_accuracies, test_log_file)
 
         # visualizing training progress
         plot_histograms(model, model_dir)
-        plot_train_curves(train_losses, test_losses, "TrainCurves", model_dir)
-        plot_train_curves(train_accuracies, test_accuracies, "Accuracy", model_dir, logy=False)
+        plot_train_curves(train_losses, val_losses, "TrainCurves", model_dir)
+        plot_train_curves(train_accuracies, val_accuracies, "Validation Accuracy", model_dir, logy=False)
+        plot_train_curves(val_accuracies, test_accuracies, "Test Accuracy", model_dir, logy=False)
 
 
 def load_model(name, device, num_classes, inference):

@@ -14,9 +14,9 @@ class TestDataset(Dataset):
     Dataset for .jpg images and labels
     """
 
-    def __init__(self, root: str, test_dir: str):
+    def __init__(self, root: str, test_dir: str, dst_img_size: Tuple[int, int]):
         self._search_for_files(os.path.join(root, test_dir))
-        self.cache = ImageCache(force_rgb=True)
+        self.cache = ImageCache(force_rgb=True, dst_img_size=dst_img_size)
 
         # loading labels
         self.labels = ImageDataset.load_labels(root)
@@ -43,7 +43,7 @@ class TestDataset(Dataset):
         # indexing labels
         self.label_to_index = dict()
         for i, label in enumerate(self.labels):
-            self.label_to_index[i] = label
+            self.label_to_index[label] = i
 
     def __getitem__(self, index) -> Tuple[np.ndarray, int]:
         """

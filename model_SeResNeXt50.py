@@ -14,7 +14,7 @@ class model_SeResNeXt50(nn.Module):
         if inference:
             self.classifier.add_module('softmax', nn.Softmax())
 
-        # self.freeze_module([self.encoder])
+        self.freeze_module([self.encoder])
 
     def forward(self, batch):
         rgb = batch['rgb']

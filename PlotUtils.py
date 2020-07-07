@@ -14,10 +14,15 @@ import cv2
 import torch.nn as nn
 
 
-def plot_histograms(model: nn.Module, dir: str):
+def plot_histograms(model: nn.Module, _dir: str):
 
-    if dir is not None and not os.path.exists(dir):
-        os.mkdir(dir)
+    if _dir is not None and not os.path.exists(_dir):
+        os.mkdir(_dir)
+
+    # adding subdir
+    _dir = os.path.join(_dir, 'histograms')
+    if _dir is not None and not os.path.exists(_dir):
+        os.mkdir(_dir)
 
     params = []
     for name, value in model.named_parameters():
@@ -29,8 +34,8 @@ def plot_histograms(model: nn.Module, dir: str):
         plt.hist(v.flatten(), 50)
         plt.title(name)
 
-        if dir is not None:
-            plt.savefig(os.path.join(dir, "hist_" + name + ".png"))
+        if _dir is not None:
+            plt.savefig(os.path.join(_dir, "hist_" + name + ".png"))
             plt.clf()
         else:
             plt.show()
@@ -39,8 +44,8 @@ def plot_histograms(model: nn.Module, dir: str):
     if hasattr(model, 'get_first_conv_layer'):
         first_conv_weights = model.get_first_conv_layer().weight
         img = visualize_conv_layer(first_conv_weights)
-        if dir is not None:
-            cv2.imwrite(os.path.join(dir, 'first_conv.png'), img)
+        if _dir is not None:
+            cv2.imwrite(os.path.join(_dir, 'first_conv.png'), img)
         else:
             plt.imshow(img)
             plt.clf()
