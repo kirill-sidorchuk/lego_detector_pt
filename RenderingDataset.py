@@ -110,8 +110,7 @@ class RenderingDataset(Dataset):
 
         return img
 
-    @staticmethod
-    def modulate_colors(img, color_amplitude, value_amplitude):
+    def modulate_colors(self, img, color_amplitude, value_amplitude):
         img_f = img.astype(np.float32)
         channels = cv2.split(img_f)
 
@@ -128,9 +127,9 @@ class RenderingDataset(Dataset):
         channels[2] *= r_scale
 
         # inverting colors
-        # for c in range(3):
-        #     if np.random.rand() < self.negative_prob:
-        #         channels[c] = 255 - channels[c]
+        for c in range(3):
+            if np.random.rand() < self.negative_prob:
+                channels[c] = 255 - channels[c]
 
         return convert_to_8bpp(cv2.merge(channels))
 
