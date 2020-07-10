@@ -195,8 +195,10 @@ def main(args):
     snapshot_dir = "snapshots"
     image_size = (224, 224)
     learning_rate = 0.01
+    momentum = 0.9
     debug_dir = "debug"
     debug_number = 0
+    freeze_encoder = args.freeze_encoder.lower() == 'true'
 
     set_num_threads(1)
 
@@ -231,7 +233,7 @@ def main(args):
     val_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True, **kwargs)
 
     # creating model
-    model, model_name = load_model(args.model, device, num_classes, inference=False)
+    model, model_name = load_model(args.model, device, num_classes, inference=False, freeze_encoder=freeze_encoder)
 
     # preparing snapshot dir
     if not os.path.exists(snapshot_dir):
@@ -252,7 +254,7 @@ def main(args):
     print('Starting from iteration %d' % iteration)
 
     # creating optimizer
-    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum)
 
     # creating logs
     train_losses = {}
@@ -297,11 +299,11 @@ def main(args):
         plot_train_curves(val_accuracies, test_accuracies, "Test Accuracy", model_dir, logy=False)
 
 
-def load_model(name, device, num_classes, inference):
+def load_model(name, device, num_classes, inference, **kwargs):
     model_name = 'model_' + name
     module = __import__(model_name)
     _class = getattr(module, model_name)
-    model = _class(num_classes, inference=inference).to(device)
+    model = _class(num_classes, inference=inference, **kwargs).to(device)
     return model, model_name
 
 
@@ -317,5 +319,6 @@ if __name__ == '__main__':
     parser.add_argument("--snapshot", type=int, default=None, help="Iteration to start from snapshot.")
     parser.add_argument("--num_iterations", type=int, default=100000, help="Number of iterations to train.")
     parser.add_argument("--gpu", type=str, default='true', help="Set to 'true' for GPU.")
+    parser.add_argument("--freeze_encoder", type=str, default='true', help="Set to 'true' to freeze encoder layers.")
     _args = parser.parse_args()
     main(_args)

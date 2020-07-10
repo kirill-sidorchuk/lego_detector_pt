@@ -1,10 +1,11 @@
 import pretrainedmodels
+import torch
 import torch.nn as nn
 
 
 class model_SeResNeXt50(nn.Module):
 
-    def __init__(self, num_classes, inference):
+    def __init__(self, num_classes, inference, freeze_encoder, **kwargs):
         super(model_SeResNeXt50, self).__init__()
 
         self.encoder = pretrainedmodels.__dict__["se_resnext50_32x4d"](num_classes=1000, pretrained='imagenet' if not inference else None)
@@ -14,10 +15,21 @@ class model_SeResNeXt50(nn.Module):
         if inference:
             self.classifier.add_module('softmax', nn.Softmax())
 
-        self.freeze_module([self.encoder])
+        self.img_mean = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32, requires_grad=False).view(1, -1, 1, 1)
+        self.img_std = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32, requires_grad=False).view(1, -1, 1, 1)
+
+        if freeze_encoder and not inference:
+            print('Freezing encoder layers')
+            self.freeze_module([self.encoder])
 
     def forward(self, batch):
         rgb = batch['rgb']
+
+        self.img_mean = self.img_mean.to(rgb.device)
+        self.img_std = self.img_std.to(rgb.device)
+
+        # normalizing image
+        rgb = (rgb - self.img_mean) / self.img_std
 
         features = self.encoder.features(rgb)
         pooled = self.global_pool(features).view(features.size(0), -1)

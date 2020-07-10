@@ -564,7 +564,7 @@ class EfficientNet(nn.Module):
 
 class model_EffNet4(nn.Module):
 
-    def __init__(self, num_classes, inference):
+    def __init__(self, num_classes, inference, freeze_encoder, **kwargs):
         super().__init__()
 
         self.img_mean = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32, requires_grad=False).view(1, -1, 1, 1)
@@ -580,7 +580,9 @@ class model_EffNet4(nn.Module):
         if inference:
             self.classifier.add_module('softmax', nn.Softmax())
 
-        # self.freeze_module([self.encoder])
+        if freeze_encoder:
+            print('Freezing encoder layers')
+            self.freeze_module([self.eff_net])
 
     def forward(self, batch):
         rgb = batch['rgb']
