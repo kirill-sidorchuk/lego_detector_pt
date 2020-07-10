@@ -197,7 +197,7 @@ def main(args):
     learning_rate = 0.01
     momentum = 0.9
     debug_dir = "debug"
-    debug_number = 0
+    debug_number = 300 if args.debug.lower() == 'true' else 0
     freeze_encoder = args.freeze_encoder.lower() == 'true'
 
     set_num_threads(1)
@@ -320,5 +320,6 @@ if __name__ == '__main__':
     parser.add_argument("--num_iterations", type=int, default=100000, help="Number of iterations to train.")
     parser.add_argument("--gpu", type=str, default='true', help="Set to 'true' for GPU.")
     parser.add_argument("--freeze_encoder", type=str, default='true', help="Set to 'true' to freeze encoder layers.")
+    parser.add_argument("--debug", type=str, default='false', help="Set to 'true' to dump generated training images.")
     _args = parser.parse_args()
     main(_args)
