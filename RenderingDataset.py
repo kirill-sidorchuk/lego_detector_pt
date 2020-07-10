@@ -1,11 +1,10 @@
-import torch
-
 import cv2
+import numpy as np
+import torch
 from torch.utils.data import Dataset
 
-import numpy as np
-
 import ImageDataset
+import ImageUtils
 from ImageUtils import convert_to_8bpp
 
 
@@ -64,10 +63,10 @@ class RenderingDataset(Dataset):
         fg_img = self.augment(fg_img)
         bg_img = self.augment(bg_img)
 
-        rgb_channels = self.blend(fg_img, bg_img)
-        self.add_random_noise(rgb_channels)
+        blended = self.blend(fg_img, bg_img)
+        blended = self.add_random_noise(blended)
 
-        rgb_tensor = torch.tensor(rgb_channels) / 255.
+        rgb_tensor = ImageUtils.image_to_tensor(blended, unsqueeze=False)
 
         # getting label index
         label_index = self.foregrounds.labels.index(label)
@@ -178,24 +177,17 @@ class RenderingDataset(Dataset):
         shadow_intensity = np.random.rand() * self.max_shadow_intensity
         shadow = (255 - cv2.blur(alpha, (31, 31)).astype(np.float32) * shadow_intensity) / 255.
 
-        bgf = bg.astype(np.float32)
-        fgf = fg.astype(np.float32)
-        fg_channels = cv2.split(fgf)
-        alpha = fg_channels[3]
-        alpha_inv = 255 - alpha
-
         # applying shadow
-        bg_channels = cv2.split(bgf)
-        for c in range(3):
-            bg_channels[c] *= shadow
+        bg = bg.astype(np.float32) * np.expand_dims(shadow, 2)
 
-        for c in range(3):
-            bg_channels[c] = (fg_channels[c] * alpha + bg_channels[c] * alpha_inv) / 255
+        # alpha-blending
+        alpha = alpha.astype(np.float32) / 255.
+        alpha = np.expand_dims(alpha, 2)
+        blended = fg.astype(np.float32)[:, :, 0:3] * alpha + (1 - alpha) * bg
 
-        return bg_channels
+        return convert_to_8bpp(blended)
 
-    def add_random_noise(self, rgb_channels):
-        for c in range(len(rgb_channels)):
-            noise_matrix = np.random.normal(0, self.noise_var, size=rgb_channels[c].shape)
-            rgb_channels[c] += noise_matrix
-
+    def add_random_noise(self, image):
+        noise_matrix = np.random.normal(0, self.noise_var, size=image.shape).astype(np.float32)
+        image = convert_to_8bpp(image.astype(np.float32) + noise_matrix)
+        return image

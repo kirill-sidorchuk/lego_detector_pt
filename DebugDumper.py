@@ -42,7 +42,9 @@ class DebugDumper:
 
         for i in range(len(tensor)):
 
-            img = convert_to_8bpp(cv2.merge(tensor[i].numpy() * 255))
+            img = tensor[i].permute(1, 2, 0).numpy() * 255
+            img = convert_to_8bpp(img)
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             file_name = os.path.join(self.debug_dir, "%d.jpg" % (count-i))
             cv2.imwrite(file_name, img)
 

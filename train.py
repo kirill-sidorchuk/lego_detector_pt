@@ -1,16 +1,15 @@
+import argparse
 import math
 import os
 
-import numpy as np
 import cv2
 import torch
 import torch.nn as nn
-import argparse
-
 from torch.utils.data import DataLoader
 
 from DebugDumper import DebugDumper
 from ImageDataset import ImageDataset
+from ImageUtils import image_to_tensor
 from PlotUtils import plot_histograms, plot_train_curves
 from RenderingDataset import RenderingDataset
 from TestDataset import TestDataset
@@ -104,19 +103,6 @@ def train(data_loader: DataLoader, model: nn.Module, num_iterations: int, start_
         accuracies_dict[num_iterations + start_iteration] = global_av_accuracy
 
     return num_iterations + start_iteration
-
-
-def image_to_tensor(img: np.ndarray) -> torch.Tensor:
-    """
-    Converts 8 bit BGR image [H, W, C] to 32-bit float tensor [1, C, H, W]
-    :param img: 8 bit BGR image to convert.
-    :return: torch tensor [1, C, H, W] float 32 [0..1]
-    """
-    img = torch.from_numpy(img)
-    img = img.permute(2, 0, 1)
-    img = img.unsqueeze(0)
-    img = img.to(torch.float32) / 255.
-    return img
 
 
 def test(test_set: TestDataset, model: nn.Module, iteration: int, device: torch.device, accuracies_dict: dict, log_file_name: str):
