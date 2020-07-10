@@ -130,7 +130,7 @@ def test(test_set: TestDataset, model: nn.Module, iteration: int, device: torch.
                 if index >= len(test_set):
                     break
                 img, label = test_set[index]
-                img_data = image_to_tensor(img)
+                img_data = image_to_tensor(img, unsqueeze=True)
                 img_batch.append(img_data)
                 label_batch.append(label)
 
