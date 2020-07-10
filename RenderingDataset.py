@@ -59,12 +59,15 @@ class RenderingDataset(Dataset):
 
         fg_img = cv2.resize(fg_img, (tgt_fg_width, tgt_fg_height), interpolation=cv2.INTER_AREA)
 
-        # augmentation
+        # augmentation of BG/FG
         fg_img = self.augment(fg_img)
         bg_img = self.augment(bg_img)
 
+        # alpha-blending
         blended = self.blend(fg_img, bg_img)
-        blended = self.add_random_noise(blended)
+
+        # augmentation of composite
+        blended = self.augment_blended(blended)
 
         rgb_tensor = ImageUtils.image_to_tensor(blended, unsqueeze=False)
 
@@ -87,16 +90,28 @@ class RenderingDataset(Dataset):
         if np.random.rand() < 0.5:
             img = cv2.flip(img, 0)
 
+        img = self.modulate_colors(img, self.color_ampl, self.color_val_ampl)
+        return img
+
+    def augment_blended(self, img: np.ndarray) -> np.ndarray:
+        """
+        Perform augmentation. Tweak colors, add blur, etc
+        :param img: image to tweak
+        :return: tweaked image
+        """
+
         if np.random.rand() < self.desaturate_prob:
             self.desaturate(img)
 
         if np.random.rand() < self.blur_prob:
             img = cv2.blur(img, (self.blur_kernel, self.blur_kernel))
 
-        img = self.modulate_colors(img, self.color_ampl, self.color_val_ampl)
+        img = self.add_random_noise(img)
+
         return img
 
-    def modulate_colors(self, img, color_amplitude, value_amplitude):
+    @staticmethod
+    def modulate_colors(img, color_amplitude, value_amplitude):
         img_f = img.astype(np.float32)
         channels = cv2.split(img_f)
 
@@ -113,9 +128,9 @@ class RenderingDataset(Dataset):
         channels[2] *= r_scale
 
         # inverting colors
-        for c in range(3):
-            if np.random.rand() < self.negative_prob:
-                channels[c] = 255 - channels[c]
+        # for c in range(3):
+        #     if np.random.rand() < self.negative_prob:
+        #         channels[c] = 255 - channels[c]
 
         return convert_to_8bpp(cv2.merge(channels))
 
